@@ -15,18 +15,34 @@ echo              SETUP / INSTALLING DASHBOARD
 echo  ============================================================
 echo.
 
-rem Check required tools. Only install what is missing.
-set "NEED_PYTHON=0"
-set "NEED_NODE=0"
+rem Detect a usable Python 3.10+ interpreter and Node.js 20+.
+set "NEED_PYTHON=1"
+set "NEED_NODE=1"
+
 where py >nul 2>&1
-if errorlevel 1 (
-    where python >nul 2>&1
-    if errorlevel 1 set "NEED_PYTHON=1"
+if not errorlevel 1 (
+    py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+    if not errorlevel 1 set "NEED_PYTHON=0"
 )
-where node >nul 2>&1 || set "NEED_NODE=1"
-if "%NEED_NODE%"=="0" (
-    node -e "process.exit(parseInt(process.versions.node.split('.')[0],10)>=20?0:1)" >nul 2>&1
-    if errorlevel 1 set "NEED_NODE=1"
+if "%NEED_PYTHON%"=="1" (
+    where python >nul 2>&1
+    if not errorlevel 1 (
+        python -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+        if not errorlevel 1 set "NEED_PYTHON=0"
+    )
+)
+
+rem Node may be in the Vanguard-local portable runtime from a previous setup.
+if exist "%~dp0runtimes\node\node.exe" (
+    "%~dp0runtimes\node\node.exe" -e "process.exit(parseInt(process.versions.node.split('.')[0],10)>=20?0:1)" >nul 2>&1
+    if not errorlevel 1 set "NEED_NODE=0"
+)
+if "%NEED_NODE%"=="1" (
+    where node >nul 2>&1
+    if not errorlevel 1 (
+        node -e "process.exit(parseInt(process.versions.node.split('.')[0],10)>=20?0:1)" >nul 2>&1
+        if not errorlevel 1 set "NEED_NODE=0"
+    )
 )
 
 if not "%NEED_PYTHON%%NEED_NODE%"=="00" (
@@ -37,6 +53,9 @@ if not "%NEED_PYTHON%%NEED_NODE%"=="00" (
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-prerequisites.ps1" %PREREQ_ARGS%
     if errorlevel 1 goto :failed
 )
+
+rem Add the portable Node.js runtime to this setup process PATH, if installed.
+if exist "%~dp0runtimes\node\node.exe" set "PATH=%~dp0runtimes\node;%PATH%"
 
 rem Source download is needed only once.
 if not exist "%BACKEND_DIR%\requirements.txt" (
@@ -69,7 +88,10 @@ if not exist "%FRONTEND_DIR%\package.json" (
 rem Verify Python 3.10+ and install backend requirements only when the hash changes.
 echo [3/6] Checking Python environment...
 set "PY_LAUNCHER="
-where py >nul 2>&1 && set "PY_LAUNCHER=py -3"
+if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_LAUNCHER=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+if not defined PY_LAUNCHER (
+    where py >nul 2>&1 && set "PY_LAUNCHER=py -3"
+)
 if not defined PY_LAUNCHER (
     where python >nul 2>&1 && set "PY_LAUNCHER=python"
 )

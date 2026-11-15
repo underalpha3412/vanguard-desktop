@@ -76,3 +76,12 @@ If a service responds successfully, it is reused. If it is stopped or not respon
 
 ## Git is not required
 The setup process downloads the public dashboard repository as a GitHub ZIP archive using Windows PowerShell. Git for Windows is not required or installed. Python and Node.js remain required for the current source-based backend/frontend setup.
+
+
+## Automatic Python and Node.js installation
+Setup checks for a working Python 3.10+ interpreter and Node.js 20+ by executing version checks (it does not rely only on `where py`). If either is missing, it checks internet access before downloading.
+- Python is downloaded from the official python.org release directory and installed for the current Windows user.
+- Node.js LTS is downloaded from the official nodejs.org distribution index and extracted as a portable runtime under `runtimes\node`. It does not require a machine-wide Node.js installation or administrator access.
+- `config.bat` adds the portable Node.js runtime to PATH for future launches.
+- Winget is not required for Python or Node.js installation.
+The installer currently targets 64-bit Windows (x64).
