@@ -1,9 +1,1 @@
-Copyright (c) 2026 Team Vanguard.
-
-All rights reserved.
-
-This repository and its contents are proprietary. No permission is granted to copy,
-modify, redistribute, sublicense, reverse engineer, or commercially use this software
-except as expressly authorized in writing by Team Vanguard.
-
-This notice does not replace a separately reviewed end-user licence agreement.
+Vanguard Desktop installer scripts. Dashboard source and bundled dependencies retain their own respective licenses.

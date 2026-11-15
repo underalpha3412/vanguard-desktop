@@ -1,44 +1,60 @@
 # Vanguard Desktop Bootstrap
 
-This repository contains the Windows bootstrap scripts for the Earth System Trend Detective dashboard.
+Windows bootstrap scripts for the Earth System Trend Detective dashboard.
 
-## Current stage: developer bootstrap
+## User experience
 
-The current `setup.bat` downloads the **public** dashboard source from the repository configured in `config.bat`, creates a Python virtual environment, installs backend and frontend dependencies, optionally stores an NVIDIA API key in the dashboard's local `backend/.env`, and launches the application.
+- `setup.bat` prints a short, one-line progress sequence. Detailed installer output is saved to `logs\setup.log`.
+- The dashboard source is public and is cloned without GitHub sign-in.
+- Python and frontend dependencies are installed only when missing or when their requirements/lockfile changes.
+- The optional NVIDIA API key is visible while typing in CMD. Press Enter to skip.
+- The key is written to `app\backend\.env` as four separate lines.
+- `launch.bat` starts backend and frontend at the same time, waits for both to respond, then opens the browser.
 
-### Requirements for this bootstrap version
+## Requirements
 
 - Windows 10/11
 - Git for Windows
-- Python 3.10 or newer (Python launcher `py`)
-- Node.js 20 or newer with npm
-- Internet access
+- Python 3.10+
+- Node.js 20+ (includes npm)
+- Internet access for first setup
 
-The installer reports download links if Git, Python, or Node.js are missing. It does not silently install system runtimes.
+Install links:
+- Git: https://git-scm.com/download/win
+- Python: https://www.python.org/downloads/windows/
+- Node.js: https://nodejs.org/en/download/
 
-## Install and run
+## Run
 
-1. Download/extract this repository.
-2. Confirm `config.bat` points to `underalpha3412/Be-An-Earth-System-Trend-Detective`.
-3. Run `setup.bat`.
-4. Enter an NVIDIA API key at the hidden prompt, or press Enter to skip AI-generated insights.
+1. Extract this folder.
+2. Run `setup.bat` once.
+3. For later launches, run `launch.bat` directly.
 
-Run `launch.bat` again later to start the backend and dashboard.
+The first setup still needs to download/install dependencies. Subsequent setup runs skip dependency installation if the requirements and lockfile have not changed.
+
+## NVIDIA API key
+
+Create a hosted-inference API key at https://build.nvidia.com/ (sign in, open API Keys, create a key for hosted inference). Paste it when prompted. Input is intentionally visible while typing. The key is stored locally in `app\backend\.env`. Do not share or commit that file.
+
+The `.env` file is written as:
+```
+NVIDIA_API_KEY=...
+NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
+DASHBOARD_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+MODEL_GO_PROFILE=server
+```
+
+## Startup speed
+
+Backend and Vite now start concurrently. The launcher no longer waits for the backend before starting the frontend. It checks both services and opens the browser only after they respond. Vite is invoked directly through its local executable rather than `npm run dev`.
+
+First-ever dependency installation can still take time because packages must be downloaded. Later launches do not run pip or npm.
 
 ## Dashboard preservation
 
-The installer is deliberately separate from the dashboard source. Do not edit `frontend/src`, `frontend/public`, or frontend configuration as part of installer work. The dashboard UI is treated as frozen. Any future production-serving change must be isolated and verified against a frontend file-hash baseline before release.
+This repository changes installer scripts only. It does not edit dashboard React components, CSS, images, or backend application code. The dashboard source remains in its own repository.
 
-## Next packaging stage
+## Logs
 
-This is **not yet a standalone EXE or final end-user installer**. It still requires Git, Python, Node.js, and npm. The next stage is to build the existing frontend without changing its source components, package the Python backend and Model V2 assets, and test the result on a clean Windows machine. PyInstaller packaging is experimental until runtime imports, model files, and forecast endpoints are verified.
-
-## Secrets
-
-- Never commit `.env`, API keys, GitHub tokens, `.venv`, or `node_modules`.
-- The optional NVIDIA key is entered with hidden terminal input and written to the local backend `.env`. That local file contains the key in plaintext because the current backend reads it as an environment variable. Protect the Windows account and never upload that file.
-- Do not embed a personal GitHub token in an installer.
-
-## Source repository
-
-`https://github.com/underalpha3412/Be-An-Earth-System-Trend-Detective`
+- Setup dependency/download output: `logs\setup.log`
+- Backend and frontend run in their own minimized terminal windows.

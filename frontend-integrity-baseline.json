@@ -1,0 +1,19 @@
+{
+  "source_repository": "underalpha3412/Be-An-Earth-System-Trend-Detective",
+  "purpose": "Reference hashes of the uploaded original frontend; packaging must not alter these files.",
+  "files": {
+    ".env.example": "b6c1fbff255bd57a7aa621707f39317bc4bf282efe01570819ae7ed392f9c56f",
+    "index.html": "afb47c2cf8ecabc8784a8e4302640c4c72c809f174fba6183b6a7c2b4c7f596f",
+    "package-lock.json": "3a8a53be2e1389dcd47c35bd3d510fcd1a3823ac700c7deb269c6e4566c49364",
+    "package.json": "019ef0cef586fd74456b820feb32d80eb4822d95c3f9c5a985232d74a2f22443",
+    "public/vanguard-logo.jpg": "bb9f73995ba6e968d60847cef878ef3fa43d12aed40202a61a1a5bb659f3afe2",
+    "src/App.tsx": "63134958e250139ca747a19367d57c55178fe34ebfc256e7c6bc0e08a76dfe4d",
+    "src/data/delhi-2015-2025.json": "a8e81c2d52332c7e8c6dd1951a953e6b2ae650e3b9e562b99c0584735fe86aa9",
+    "src/main.tsx": "fbcc443ae49b7b9afafc9a5ff2b38cbf0425c1d2759639aba60d8052926c3e6d",
+    "src/services/api.ts": "914a780dfa2f762caf3455547d3630d194ccdffb9b1a7ed5059a84891ccce04d",
+    "src/styles.css": "678afe7001afaa201a3d5b704e1f50ba30fb390abac6c9da15014d83f8925da8",
+    "src/types/index.ts": "454a8889570e1dd261f874a341661fd952c4606665c905d2d6ae7c78b4380fc1",
+    "tsconfig.json": "f9b7be7f0032829e596537ec99924aa495dbe9dfb1a2dfad9495db2e2600b1dc",
+    "vite.config.ts": "ac96ee693c7a4c978027ca1f7b1ae4d8995f0f91c39c51a038d814756fe832a5"
+  }
+}
