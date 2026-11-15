@@ -45,3 +45,30 @@ Only installer/launcher scripts are changed. No React components, CSS, chart cod
 
 ## API key storage fix (revision)
 The launcher writes the key through the installed Python `python-dotenv` library with quoted value handling, then immediately reads the file back and verifies both `NVIDIA_API_KEY` and `NVIDIA_MODEL` before starting services. This safely handles punctuation in generated keys.
+
+
+## Startup diagnostics
+Backend and frontend are started in separate minimized CMD windows that remain open if a process exits. Their console output is captured in `logs\backend.log` and `logs\frontend.log`.
+
+
+## Second-launch reliability fix
+The launcher checks ports independently and uses the Windows `start` command to open visible minimized CMD windows for services that are not already listening. It avoids starting duplicate services when a port is already active. Backend and frontend logs are recreated on each fresh service start.
+
+## Repeated-launch dependency check fix
+The npm lockfile stamp is stored in `frontend\.vanguard-lock.sha256`, outside `node_modules`, because `npm ci` replaces `node_modules`. The launcher validates the exact Vite command shim used to start the frontend (`node_modules\.bin\vite.cmd`) both after dependency installation and before service startup.
+
+
+## Relaunch behaviour
+Every launch checks real HTTP readiness:
+- Backend: `http://127.0.0.1:8000/health`
+- Frontend: `http://127.0.0.1:5173/`
+
+If a service responds successfully, it is reused. If it is stopped or not responding, its corresponding CMD runner is started again. Once both are ready, the browser opens. A different program occupying one of the configured ports can prevent Vanguard from binding to that port; in that case inspect the corresponding service log.
+
+
+## Setup vs. Launch (important)
+- `setup.bat` is for first installation or repair. It checks prerequisites, downloads source when absent, installs/updates Python and npm dependencies, and requests/saves the NVIDIA key when needed.
+- `launch.bat` is the fast daily launcher. It does not run Git, pip, npm, winget, or dependency installation.
+- Every launch first probes the backend `/health` endpoint and the frontend `/` endpoint. Healthy services are reused even if local dependency folders are unavailable. Only a stopped/unhealthy service is started, and only that service's local prerequisites are checked.
+- If a stopped service is missing its local runtime/dependencies/configuration, `launch.bat` asks the user to run `setup.bat` for repair.
+- The dashboard source, UI, charts, styles, and backend application code are not modified by this installer change.
