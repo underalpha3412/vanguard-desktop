@@ -3,7 +3,7 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 call config.bat
 
-echo.
+ echo.
 echo  ============================================
 echo       TEAM VANGUARD - DESKTOP SETUP
 echo  ============================================
@@ -23,14 +23,6 @@ if errorlevel 1 (
   exit /b 1
 )
 
-where gh >nul 2>&1
-if errorlevel 1 (
-  echo [ERROR] GitHub CLI is not installed. It is required to access the private repository.
-  echo Download: https://cli.github.com/
-  pause
-  exit /b 1
-)
-
 where py >nul 2>&1
 if errorlevel 1 (
   echo [ERROR] Python launcher was not found.
@@ -43,7 +35,8 @@ if errorlevel 1 (
 py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
 if errorlevel 1 (
   py -3 --version
-  echo [ERROR] Python 3.10 or newer is required. Install it from https://www.python.org/downloads/windows/
+  echo [ERROR] Python 3.10 or newer is required.
+  echo Download: https://www.python.org/downloads/windows/
   pause
   exit /b 1
 )
@@ -56,7 +49,12 @@ if errorlevel 1 (
   exit /b 1
 )
 
-for /f "tokens=1 delims=v." %%A in ('node --version') do set NODE_MAJOR=%%A
+for /f %%A in ('node -p "process.versions.node.split('.')[0]"') do set "NODE_MAJOR=%%A"
+if not defined NODE_MAJOR (
+  echo [ERROR] Could not determine Node.js version.
+  pause
+  exit /b 1
+)
 if %NODE_MAJOR% LSS 20 (
   echo [ERROR] Node.js 20 or newer is required. Detected:
   node --version
@@ -65,42 +63,31 @@ if %NODE_MAJOR% LSS 20 (
   exit /b 1
 )
 
-echo [1/5] Checking GitHub authentication...
-gh auth status >nul 2>&1
-if errorlevel 1 (
-  echo Sign in to GitHub. Your account must have access to %VANGUARD_SOURCE_REPO%.
-  gh auth login
-  if errorlevel 1 (
-    echo [ERROR] GitHub authentication did not complete.
-    pause
-    exit /b 1
-  )
-)
-
-echo [2/5] Downloading Vanguard source...
+echo [1/5] Checking public dashboard source...
 if not exist "%VANGUARD_APP_DIR%" (
-  gh repo clone "%VANGUARD_SOURCE_REPO%" "%VANGUARD_APP_DIR%"
+  git clone --depth 1 "https://github.com/%VANGUARD_SOURCE_REPO%.git" "%VANGUARD_APP_DIR%"
   if errorlevel 1 (
-    echo [ERROR] Could not clone the source repository. Check the repo name and your access.
+    echo [ERROR] Could not download the public source repository.
+    echo Check repository visibility, URL, and internet connection.
     pause
     exit /b 1
   )
 ) else (
-  echo Existing app folder found. Keeping it; use launch.bat to run it.
+  echo Existing app folder found. Keeping it; delete app to download a fresh copy.
 )
 
 if not exist "%VANGUARD_APP_DIR%\backend\requirements.txt" (
-  echo [ERROR] Expected backend\requirements.txt was not found in the source repo.
+  echo [ERROR] Expected backend\requirements.txt was not found.
   pause
   exit /b 1
 )
 if not exist "%VANGUARD_APP_DIR%\frontend\package.json" (
-  echo [ERROR] Expected frontend\package.json was not found in the source repo.
+  echo [ERROR] Expected frontend\package.json was not found.
   pause
   exit /b 1
 )
 
-echo [3/5] Preparing Python environment...
+ echo [2/5] Preparing Python environment...
 if not exist "%VANGUARD_APP_DIR%\backend\.venv\Scripts\python.exe" (
   py -3 -m venv "%VANGUARD_APP_DIR%\backend\.venv"
   if errorlevel 1 goto :failed
@@ -110,28 +97,26 @@ if errorlevel 1 goto :failed
 "%VANGUARD_APP_DIR%\backend\.venv\Scripts\python.exe" -m pip install -r "%VANGUARD_APP_DIR%\backend\requirements.txt"
 if errorlevel 1 goto :failed
 
-echo [4/5] Installing frontend packages...
+ echo [3/5] Installing frontend packages...
 cd /d "%VANGUARD_APP_DIR%\frontend"
-call npm install
+call npm ci
+if errorlevel 1 (
+  echo [INFO] npm ci could not use the lockfile. Trying npm install...
+  call npm install
+  if errorlevel 1 goto :failed
+)
+
+ echo [4/5] NVIDIA Nemotron setup (optional)...
+echo A key is optional. Press Enter to skip AI-generated insights.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$secure = Read-Host 'NVIDIA API key (input hidden, optional)' -AsSecureString; $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure); try { $key = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr); $lines = @('NVIDIA_API_KEY=' + $key, 'NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b', 'DASHBOARD_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173', 'MODEL_GO_PROFILE=server'); Set-Content -LiteralPath '%VANGUARD_APP_DIR%\backend\.env' -Value $lines -Encoding ascii } finally { if ($ptr -ne [IntPtr]::Zero) { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) } }"
 if errorlevel 1 goto :failed
 
-echo [5/5] NVIDIA Nemotron setup (optional)...
-set "NVIDIA_KEY="
-set /p "NVIDIA_KEY=Paste NVIDIA API key, or press Enter to skip AI insights: "
-(
-  echo NVIDIA_API_KEY=%NVIDIA_KEY%
-  echo NVIDIA_MODEL=nvidia/nemotron-3.5-lightning-30b-a3b
-  echo DASHBOARD_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-  echo MODEL_GO_PROFILE=server
-) > "%VANGUARD_APP_DIR%\backend\.env"
-
-echo.
-echo Setup completed. Starting Vanguard...
+ echo [5/5] Setup complete. Starting Vanguard...
 call "%~dp0launch.bat"
 exit /b 0
 
 :failed
 echo.
-echo [ERROR] Setup failed. Review the error above, check your internet connection, and run setup.bat again.
+echo [ERROR] Setup failed. Review the error above and run setup.bat again.
 pause
 exit /b 1

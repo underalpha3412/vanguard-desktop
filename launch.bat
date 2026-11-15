@@ -35,7 +35,7 @@ echo Backend is responding.
 
 :start_frontend
 echo Starting Vanguard dashboard...
-start "Vanguard Dashboard" cmd /k "cd /d ""%VANGUARD_APP_DIR%\frontend"" && npm run dev -- --host 127.0.0.1"
+start "Vanguard Dashboard" cmd /k "cd /d ""%VANGUARD_APP_DIR%\frontend"" && npm run dev -- --host 127.0.0.1 --port %VANGUARD_FRONTEND_PORT% --strictPort"
 
 timeout /t 4 /nobreak >nul
 start "" "http://127.0.0.1:%VANGUARD_FRONTEND_PORT%"
