@@ -1,5 +1,4 @@
 param(
-    [switch]$NeedGit,
     [switch]$NeedPython,
     [switch]$NeedNode
 )
@@ -22,7 +21,6 @@ function Test-Internet {
 }
 
 $missing = @()
-if ($NeedGit) { $missing += "Git" }
 if ($NeedPython) { $missing += "Python 3.10+" }
 if ($NeedNode) { $missing += "Node.js 20+" }
 
@@ -51,11 +49,6 @@ if (-not $winget) {
     exit 11
 }
 
-if ($NeedGit) {
-    Write-Host "[1/3] Installing Git for Windows..."
-    & winget install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements
-    if ($LASTEXITCODE -ne 0) { Write-Host "[ERROR] Git installation failed."; exit 12 }
-}
 if ($NeedPython) {
     Write-Host "[2/3] Installing Python 3.12..."
     & winget install --id Python.Python.3.12 --exact --silent --accept-package-agreements --accept-source-agreements
@@ -70,16 +63,12 @@ if ($NeedNode) {
 # Refresh PATH for this process. winget-installed apps commonly register these paths.
 $env:Path = [Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
             [Environment]::GetEnvironmentVariable("Path","User") + ";" + $env:Path
-$env:Path += ";C:\Program Files\Git\cmd;C:\Program Files\nodejs"
+$env:Path += ";C:\Program Files\nodejs"
 $local = [Environment]::GetFolderPath("LocalApplicationData")
 $env:Path += ";$local\Programs\Python\Python312;$local\Programs\Python\Python312\Scripts"
 $env:Path += ";C:\Python312;C:\Python312\Scripts"
 
 # Verify installations now; if PATH has not refreshed, stop clearly rather than continue broken.
-if ($NeedGit -and -not (Get-Command git.exe -ErrorAction SilentlyContinue)) {
-    Write-Host "[ERROR] Git installed but is not yet available in this terminal. Restart Windows or sign out/in, then run launch.bat again."
-    exit 15
-}
 if ($NeedPython) {
     $py = Get-Command py.exe -ErrorAction SilentlyContinue
     $python = Get-Command python.exe -ErrorAction SilentlyContinue

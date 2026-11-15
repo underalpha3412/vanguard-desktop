@@ -16,10 +16,8 @@ echo  ============================================================
 echo.
 
 rem Check required tools. Only install what is missing.
-set "NEED_GIT=0"
 set "NEED_PYTHON=0"
 set "NEED_NODE=0"
-where git >nul 2>&1 || set "NEED_GIT=1"
 where py >nul 2>&1
 if errorlevel 1 (
     where python >nul 2>&1
@@ -31,10 +29,9 @@ if "%NEED_NODE%"=="0" (
     if errorlevel 1 set "NEED_NODE=1"
 )
 
-if not "%NEED_GIT%%NEED_PYTHON%%NEED_NODE%"=="000" (
+if not "%NEED_PYTHON%%NEED_NODE%"=="00" (
     echo [1/6] Checking internet and installing missing prerequisites...
     set "PREREQ_ARGS="
-    if "%NEED_GIT%"=="1" set "PREREQ_ARGS=%PREREQ_ARGS% -NeedGit"
     if "%NEED_PYTHON%"=="1" set "PREREQ_ARGS=%PREREQ_ARGS% -NeedPython"
     if "%NEED_NODE%"=="1" set "PREREQ_ARGS=%PREREQ_ARGS% -NeedNode"
     powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-prerequisites.ps1" %PREREQ_ARGS%
@@ -50,8 +47,8 @@ if not exist "%BACKEND_DIR%\requirements.txt" (
         goto :failed
     )
     if exist "%VANGUARD_APP_DIR%" rmdir /s /q "%VANGUARD_APP_DIR%"
-    echo       Downloading dashboard source...
-    git clone --depth 1 "https://github.com/%VANGUARD_SOURCE_REPO%.git" "%VANGUARD_APP_DIR%" >"%SETUP_LOG%" 2>&1
+    echo       Downloading dashboard source directly from GitHub...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $repo='%VANGUARD_SOURCE_REPO%'; $url='https://github.com/'+$repo+'/archive/refs/heads/main.zip'; $tmp=Join-Path $env:TEMP ('vanguard-source-'+[guid]::NewGuid().ToString('N')); $zip=Join-Path $tmp 'source.zip'; New-Item -ItemType Directory -Path $tmp -Force | Out-Null; try { Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip; Expand-Archive -LiteralPath $zip -DestinationPath $tmp -Force; $src=Get-ChildItem -LiteralPath $tmp -Directory | Where-Object { $_.Name -ne '' } | Select-Object -First 1; if(-not $src){throw 'GitHub archive did not contain a source folder'}; New-Item -ItemType Directory -Path '%VANGUARD_APP_DIR%' -Force | Out-Null; Get-ChildItem -LiteralPath $src.FullName -Force | Move-Item -Destination '%VANGUARD_APP_DIR%'; } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }" >"%SETUP_LOG%" 2>&1
     if errorlevel 1 (
         echo [ERROR] Dashboard download failed. See logs\setup.log
         goto :failed

@@ -72,3 +72,7 @@ If a service responds successfully, it is reused. If it is stopped or not respon
 - Every launch first probes the backend `/health` endpoint and the frontend `/` endpoint. Healthy services are reused even if local dependency folders are unavailable. Only a stopped/unhealthy service is started, and only that service's local prerequisites are checked.
 - If a stopped service is missing its local runtime/dependencies/configuration, `launch.bat` asks the user to run `setup.bat` for repair.
 - The dashboard source, UI, charts, styles, and backend application code are not modified by this installer change.
+
+
+## Git is not required
+The setup process downloads the public dashboard repository as a GitHub ZIP archive using Windows PowerShell. Git for Windows is not required or installed. Python and Node.js remain required for the current source-based backend/frontend setup.
