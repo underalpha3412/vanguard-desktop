@@ -18,15 +18,13 @@ Private Windows distribution/bootstrap repository for Team Vanguard's Earth Syst
 
 Create a private repository named `vanguard-desktop`, then upload the contents of this folder to its `main` branch.
 
-## 2. Configure the dashboard source repository
+## 2. Dashboard source repository
 
-Edit `config.bat` and set:
+`config.bat` is preconfigured to fetch:
 
-```bat
-set "VANGUARD_SOURCE_REPO=YOUR_GITHUB_OWNER/YOUR_DASHBOARD_REPO"
-```
+`underalpha3412/Be-An-Earth-System-Trend-Detective`
 
-The account running setup must have access to that private repository.
+The account running setup must have access to that repository. The current setup script expects the source repository to contain `backend\requirements.txt` and `frontend\package.json`. Confirm that layout before distributing this bootstrap installer.
 
 ## 3. Requirements on the user's Windows PC
 
@@ -60,3 +58,13 @@ cd app\backend
 
 The spec is a starting point. `model_go` uses bundled model assets and may need additional hidden imports or data entries after testing on a clean Windows machine. Do not claim the executable is portable until that clean-machine test passes.
 
+## Security notes
+
+- Never commit `.env`, API keys, GitHub tokens, or credentials.
+- NVIDIA keys are stored locally in `app\backend\.env`; they are not sent to this repository.
+- Users need explicit access to the private source repository. Do not embed a personal GitHub token in the batch file.
+- A private repository limits access through GitHub, but does not prevent an authorized recipient from copying files after download. For stronger protection, distribute compiled binaries, sign releases, use a licence/EULA, and keep sensitive server-side logic off client machines.
+
+## Repository visibility
+
+Keep this repository **Private**. Also keep the dashboard source repository private if access should be restricted.
