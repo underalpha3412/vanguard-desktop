@@ -28,9 +28,16 @@ function Install-Python {
     $installer = Join-Path $env:TEMP "vanguard-python-$version.exe"
     $url = "https://www.python.org/ftp/python/$version/python-$version-amd64.exe"
     Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $installer -TimeoutSec 120
-    Write-Host "  - Installing Python for the current Windows user..."
-    $p = Start-Process -FilePath $installer -ArgumentList @("/quiet","InstallAllUsers=0","PrependPath=1","Include_launcher=1","Include_pip=1","Include_test=0","Shortcuts=0") -Wait -PassThru
+    $pythonDir = Join-Path $PSScriptRoot "runtimes\python"
+    New-Item -ItemType Directory -Path $pythonDir -Force | Out-Null
+    Write-Host "  - Installing Python into Vanguard's local runtime folder..."
+    $target = "TargetDir=$pythonDir"
+    $p = Start-Process -FilePath $installer -ArgumentList @("/quiet","InstallAllUsers=0",$target,"PrependPath=0","Include_launcher=0","Include_pip=1","Include_test=0","Shortcuts=0") -Wait -PassThru
     if ($p.ExitCode -notin @(0,3010)) { throw "Python installer exited with code $($p.ExitCode)." }
+    $localPython = Join-Path $pythonDir "python.exe"
+    if (-not (Test-Path $localPython)) { throw "Python installer finished but runtimes\python\python.exe was not created." }
+    & $localPython -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
+    if ($LASTEXITCODE -ne 0) { throw "Vanguard-local Python failed its version check." }
 }
 
 function Install-PortableNode {
@@ -81,22 +88,12 @@ try {
     $env:Path += ";$PSScriptRoot\runtimes\node"
 
     if ($NeedPython) {
-        $pythonOk = $false
-        foreach ($candidate in @(
-            (Join-Path $local "Programs\Python\Python312\python.exe"),
-            (Join-Path $local "Programs\Python\Python313\python.exe"),
-            (Join-Path $local "Programs\Python\Python314\python.exe")
-        )) {
-            if (Test-Path $candidate) {
-                & $candidate -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
-                if ($LASTEXITCODE -eq 0) { $pythonOk = $true; break }
-            }
+        $localPython = Join-Path $PSScriptRoot "runtimes\python\python.exe"
+        if (-not (Test-Path $localPython)) {
+            throw "Python installation finished, but the Vanguard-local interpreter is missing."
         }
-        if (-not $pythonOk) {
-            $py = Get-Command py.exe -ErrorAction SilentlyContinue
-            if ($py) { & $py.Source -3.12 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"; $pythonOk = ($LASTEXITCODE -eq 0) }
-        }
-        if (-not $pythonOk) { throw "Python installer finished, but a working Python 3.10+ interpreter could not be verified. Sign out/in or restart Windows, then run setup.bat again." }
+        & $localPython -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)"
+        if ($LASTEXITCODE -ne 0) { throw "Vanguard-local Python did not pass the Python 3.10+ check." }
     }
 
     if ($NeedNode) {

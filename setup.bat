@@ -88,9 +88,11 @@ if not exist "%FRONTEND_DIR%\package.json" (
 rem Verify Python 3.10+ and install backend requirements only when the hash changes.
 echo [3/6] Checking Python environment...
 set "PY_LAUNCHER="
-if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_LAUNCHER=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
+rem Prefer the exact interpreter installed and verified by Vanguard's prerequisite installer.
+if exist "%~dp0runtimes\python\python.exe" set "PY_LAUNCHER=%~dp0runtimes\python\python.exe"
+if not defined PY_LAUNCHER if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_LAUNCHER=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 if not defined PY_LAUNCHER (
-    where py >nul 2>&1 && set "PY_LAUNCHER=py -3"
+    where py >nul 2>&1 && set "PY_LAUNCHER=py -3.12"
 )
 if not defined PY_LAUNCHER (
     where python >nul 2>&1 && set "PY_LAUNCHER=python"

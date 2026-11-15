@@ -7,3 +7,6 @@ set "VANGUARD_FRONTEND_PORT=5173"
 
 rem Use Vanguard-local portable Node.js when present.
 if exist "%~dp0runtimes\node\node.exe" set "PATH=%~dp0runtimes\node;%PATH%"
+
+rem Prefer Vanguard-local Python runtime when present.
+if exist "%~dp0runtimes\python\python.exe" set "PATH=%~dp0runtimes\python;%PATH%"

@@ -85,3 +85,7 @@ Setup checks for a working Python 3.10+ interpreter and Node.js 20+ by executing
 - `config.bat` adds the portable Node.js runtime to PATH for future launches.
 - Winget is not required for Python or Node.js installation.
 The installer currently targets 64-bit Windows (x64).
+
+
+## Python interpreter consistency fix
+When Python is missing or too old, setup installs Python into `runtimes\python` inside the Vanguard folder and then uses that exact `python.exe` to create the backend virtual environment. It no longer assumes that the `py` launcher points to the newly installed interpreter. This avoids a common Windows case where `py -3` continues selecting an older Python after a newer version was installed.
