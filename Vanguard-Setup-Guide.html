@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Team Vanguard | Setup Guide</title>
+<style>
+body{font:16px/1.6 Segoe UI,Arial,sans-serif;background:#08131a;color:#d9e7e8;margin:0;padding:32px}
+main{max-width:850px;margin:auto;background:#10212a;border:1px solid #28504e;border-radius:14px;padding:28px}
+h1,h2{color:#d8f3ed}code{background:#071117;padding:3px 7px;border-radius:5px;color:#9fe4d0}
+.note{border-left:3px solid #54b6a1;padding:10px 14px;background:#0b1a21}
+li{margin:8px 0}a{color:#8bd9c4}
+</style></head><body><main>
+<h1>TEAM VANGUARD</h1><h2>First-time installation guide</h2>
+<p>Run <code>setup.bat</code> once. It checks for Python 3.10+ and Node.js 20+ and installs whichever runtime is missing.</p>
+<ol>
+<li>Keep the <code>installers</code> folder beside <code>setup.bat</code>. It contains the supplied Python and Node.js installers.</li>
+<li>If an installer file is missing, setup downloads that installer from the official Python or Node.js website. Internet access is needed only for missing installers and dashboard dependencies.</li>
+<li>Allow the Windows installer prompts to complete. If Windows requests administrator approval for Node.js MSI, approve it.</li>
+<li>Setup then downloads the dashboard, installs its dependencies, obtains the shared judging configuration, and starts Vanguard.</li>
+<li>For later use, run <code>launch.bat</code>. Do not rerun setup unless installation needs repair.</li>
+</ol>
+<div class="note"><strong>If setup stops:</strong> check <code>logs\setup.log</code>. Do not delete <code>app\backend\.env</code> or the <code>app</code> folder when repairing an existing installation.</div>
+<h2>Manual runtime fallback</h2>
+<p>If your organization's security policy blocks automatic installation, install the supplied Python and Node.js packages manually, then run <code>setup.bat</code> again.</p>
+<p>Python: <a href="https://www.python.org/downloads/">python.org/downloads</a><br>Node.js: <a href="https://nodejs.org/en/download">nodejs.org/download</a></p>
+</main></body></html>

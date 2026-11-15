@@ -89,3 +89,21 @@ The installer currently targets 64-bit Windows (x64).
 
 ## Python interpreter consistency fix
 When Python is missing or too old, setup installs Python into `runtimes\python` inside the Vanguard folder and then uses that exact `python.exe` to create the backend virtual environment. It no longer assumes that the `py` launcher points to the newly installed interpreter. This avoids a common Windows case where `py -3` continues selecting an older Python after a newer version was installed.
+
+
+## Shared judging API configuration
+Setup downloads `backend/.env` from the configured public GitHub source repository at `https://raw.githubusercontent.com/<owner>/<repo>/main/backend/.env`. The file must be committed at that exact path for setup to work. The installer validates that `NVIDIA_API_KEY` and `NVIDIA_MODEL` are present before starting. It no longer prompts judges to enter a key.
+
+**Security warning:** a `.env` committed to a public repository is public to everyone, not just judges. Anyone can copy and use the NVIDIA key, including outside the six-month judging period. Use a low-quota, time-limited key and revoke it immediately after judging. Do not use a key tied to personal billing or sensitive accounts.
+
+
+## Bundled runtime installers
+The `installers` folder contains the two Windows installers supplied for this release:
+- `python-3.15.2-amd64.exe`
+- `node-v26.13.1-x64.msi`
+
+During setup, Vanguard first uses these local installer files when a suitable runtime is missing. If one of the installer files is absent, `ensure-prerequisites.ps1` downloads that exact installer from the official `python.org` or `nodejs.org` distribution URL. It validates the downloaded file's Authenticode signature before executing it. Internet access is needed only when a required installer is absent, and for source/dependency downloads.
+
+The Python installer installs into `runtimes\python` so the backend uses the exact interpreter installed by Vanguard. Node.js is installed by its MSI and is verified before npm is used. If Windows asks for administrator approval for the Node.js MSI, approve it. The installer targets 64-bit Windows.
+
+Open `Vanguard-Setup-Guide.html` for end-user installation instructions. This guide is separate from the dashboard application and does not alter the dashboard interface.

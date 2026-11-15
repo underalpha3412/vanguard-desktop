@@ -19,10 +19,16 @@ rem Detect a usable Python 3.10+ interpreter and Node.js 20+.
 set "NEED_PYTHON=1"
 set "NEED_NODE=1"
 
-where py >nul 2>&1
-if not errorlevel 1 (
-    py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+if exist "%~dp0runtimes\python\python.exe" (
+    "%~dp0runtimes\python\python.exe" -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
     if not errorlevel 1 set "NEED_PYTHON=0"
+)
+if "%NEED_PYTHON%"=="1" (
+    where py >nul 2>&1
+    if not errorlevel 1 (
+        py -3 -c "import sys; raise SystemExit(0 if sys.version_info >= (3,10) else 1)" >nul 2>&1
+        if not errorlevel 1 set "NEED_PYTHON=0"
+    )
 )
 if "%NEED_PYTHON%"=="1" (
     where python >nul 2>&1
@@ -32,9 +38,12 @@ if "%NEED_PYTHON%"=="1" (
     )
 )
 
-rem Node may be in the Vanguard-local portable runtime from a previous setup.
 if exist "%~dp0runtimes\node\node.exe" (
     "%~dp0runtimes\node\node.exe" -e "process.exit(parseInt(process.versions.node.split('.')[0],10)>=20?0:1)" >nul 2>&1
+    if not errorlevel 1 set "NEED_NODE=0"
+)
+if "%NEED_NODE%"=="1" if exist "%ProgramFiles%\nodejs\node.exe" (
+    "%ProgramFiles%\nodejs\node.exe" -e "process.exit(parseInt(process.versions.node.split('.')[0],10)>=20?0:1)" >nul 2>&1
     if not errorlevel 1 set "NEED_NODE=0"
 )
 if "%NEED_NODE%"=="1" (
@@ -46,6 +55,7 @@ if "%NEED_NODE%"=="1" (
 )
 
 if not "%NEED_PYTHON%%NEED_NODE%"=="00" (
+    if exist "%~dp0Vanguard-Setup-Guide.html" start "" "%~dp0Vanguard-Setup-Guide.html"
     echo [1/6] Checking internet and installing missing prerequisites...
     set "PREREQ_ARGS="
     if "%NEED_PYTHON%"=="1" set "PREREQ_ARGS=%PREREQ_ARGS% -NeedPython"
@@ -54,8 +64,10 @@ if not "%NEED_PYTHON%%NEED_NODE%"=="00" (
     if errorlevel 1 goto :failed
 )
 
-rem Add the portable Node.js runtime to this setup process PATH, if installed.
+rem Refresh PATH for runtimes installed during this setup process.
 if exist "%~dp0runtimes\node\node.exe" set "PATH=%~dp0runtimes\node;%PATH%"
+if exist "%ProgramFiles%\nodejs\node.exe" set "PATH=%ProgramFiles%\nodejs;%PATH%"
+if exist "%~dp0runtimes\python\python.exe" set "PATH=%~dp0runtimes\python;%PATH%"
 
 rem Source download is needed only once.
 if not exist "%BACKEND_DIR%\requirements.txt" (
@@ -92,7 +104,7 @@ rem Prefer the exact interpreter installed and verified by Vanguard's prerequisi
 if exist "%~dp0runtimes\python\python.exe" set "PY_LAUNCHER=%~dp0runtimes\python\python.exe"
 if not defined PY_LAUNCHER if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PY_LAUNCHER=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 if not defined PY_LAUNCHER (
-    where py >nul 2>&1 && set "PY_LAUNCHER=py -3.12"
+    where py >nul 2>&1 && set "PY_LAUNCHER=py -3"
 )
 if not defined PY_LAUNCHER (
     where python >nul 2>&1 && set "PY_LAUNCHER=python"
@@ -179,44 +191,23 @@ if "%INSTALL_NPM%"=="1" (
     echo       Frontend packages already installed.
 )
 
-rem Mandatory persistent NVIDIA key. Existing non-empty key is preserved.
-echo [5/6] Checking NVIDIA Nemotron API key...
-if not exist "%BACKEND_DIR%\.env" goto :get_key
-"%PYTHON%" -c "from dotenv import dotenv_values; import sys; d=dotenv_values(r'%BACKEND_DIR%\.env'); sys.exit(0 if (d.get('NVIDIA_API_KEY') or '').strip() else 1)" >nul 2>&1
-if not errorlevel 1 (
-    echo       NVIDIA API key already saved. Reusing it.
-    goto :start_app
-)
-
-:get_key
-echo.
-echo  ------------------------------------------------------------
-echo  NVIDIA API KEY REQUIRED
-echo  Create your key at https://build.nvidia.com/
-echo  Sign in, open API Keys, and create a hosted-inference key.
-echo  ------------------------------------------------------------
-set "NVIDIA_KEY="
-set /p "NVIDIA_KEY=Paste your NVIDIA API key (visible while typing): "
-if not defined NVIDIA_KEY (
-    echo [ERROR] API key is mandatory. Vanguard cannot start without it.
-    goto :failed
-)
-set "VANGUARD_NVIDIA_KEY=%NVIDIA_KEY%"
-"%PYTHON%" -c "import os; from dotenv import set_key; p=r'%BACKEND_DIR%\.env'; k=os.environ.get('VANGUARD_NVIDIA_KEY','').strip(); assert k, 'API key input was empty'; set_key(p,'NVIDIA_API_KEY',k,quote_mode='always'); set_key(p,'NVIDIA_MODEL','nvidia/nemotron-3.5-lightning-30b-a3b',quote_mode='never'); set_key(p,'DASHBOARD_ALLOWED_ORIGINS','http://localhost:%VANGUARD_FRONTEND_PORT%,http://127.0.0.1:%VANGUARD_FRONTEND_PORT%',quote_mode='always'); set_key(p,'MODEL_GO_PROFILE','server',quote_mode='never')"
+rem Fetch the shared judging .env from the dashboard repository.
+rem The file must be committed at backend/.env in the public source repository.
+echo [5/6] Downloading shared NVIDIA configuration...
+if not exist "%BACKEND_DIR%" mkdir "%BACKEND_DIR%"
+set "ENV_URL=https://raw.githubusercontent.com/%VANGUARD_SOURCE_REPO%/main/backend/.env"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $u='%ENV_URL%'; $p='%BACKEND_DIR%\.env'; try { Invoke-WebRequest -UseBasicParsing -Uri $u -OutFile ($p+'.download') -TimeoutSec 30; if ((Get-Item ($p+'.download')).Length -lt 20) { throw 'Downloaded .env file is empty or too small.' }; Move-Item -Force ($p+'.download') $p } catch { Remove-Item ($p+'.download') -Force -ErrorAction SilentlyContinue; Write-Error ('Could not download shared backend .env: '+$_.Exception.Message); exit 1 }"
 if errorlevel 1 (
-    echo [ERROR] Could not save API key to backend\.env. See logs\setup.log.
-    set "VANGUARD_NVIDIA_KEY="
+    echo [ERROR] Shared backend .env could not be downloaded.
+    echo         Confirm backend\.env is committed to the public GitHub repository.
     goto :failed
 )
 "%PYTHON%" -c "from dotenv import dotenv_values; import sys; d=dotenv_values(r'%BACKEND_DIR%\.env'); sys.exit(0 if (d.get('NVIDIA_API_KEY') or '').strip() and (d.get('NVIDIA_MODEL') or '').strip() else 1)" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Saved .env did not pass validation. The key was not accepted for startup.
-    set "VANGUARD_NVIDIA_KEY="
+    echo [ERROR] Downloaded backend\.env is missing NVIDIA_API_KEY or NVIDIA_MODEL.
     goto :failed
 )
-set "NVIDIA_KEY="
-set "VANGUARD_NVIDIA_KEY="
-echo       API key and model saved and verified in backend\.env.
+echo       Shared NVIDIA configuration downloaded and verified.
 
 :start_app
 echo [6/6] Starting Vanguard...
